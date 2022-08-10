@@ -1,0 +1,174 @@
+---
+title: "P2.LeSage"
+author: "Chelsea Le Sage"
+date: '2022-08-09'
+output: html_document
+---
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+setwd("/Users/chelsea/Desktop/Project2")
+Data<-read.csv('kc_house_data.csv')
+library(ggplot2)
+set.seed(1)
+sample<-sample.int(nrow(Data), floor(.5*nrow(Data))) # 50/50 split
+train<-Data[sample, ] # training data frame
+test<-Data[-sample, ] # test data frame
+options(scipen = 100)
+```
+
+```{r}
+library(leaps)
+allreg <- regsubsets(price~bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+sqft_basement+yr_built+yr_renovated+lat+long, data=train, nbest=1)
+summary(allreg)
+```
+
+```{r}
+partial<-lm(price~waterfront+view+grade+condition, data=train)
+summary(partial)
+```
+```{r}
+anova(partial)
+```
+
+```{r}
+confint(partial,level = 0.95)
+```
+
+```{r}
+##store fitted y & residuals
+yhat<-partial$fitted.values
+res<-partial$residuals
+##add to data frame
+train<-data.frame(train,yhat,res)
+```
+
+```{r}
+ggplot(train, aes(x=yhat,y=res))+
+  geom_point()+
+  geom_hline(yintercept=0, color="red")+
+  labs(x="Fitted y",
+  y="Residuals",
+  title="Residual Plot")
+```
+```{r}
+library(MASS)
+boxcox(partial, lambda = seq(-0.2, 0.2, 1/25))
+```
+```{r}
+ystar<-log(train$price)
+train<-data.frame(train,ystar)
+result.ystar<-lm(ystar~waterfront+view+grade+condition, data=train)
+
+yhat2<-result.ystar$fitted.values
+res2<-result.ystar$residuals
+##add to data frame
+train<-data.frame(train,yhat2,res2)
+```
+
+```{r}
+ggplot(train, aes(x=yhat2,y=res2))+
+  geom_point()+
+  geom_hline(yintercept=0, color="red")+
+  labs(x="Fitted y", y="Residuals", title="Residual Plot with ystar")
+```
+
+```{r}
+train$view<-factor(train$view)
+levels(train$view)
+
+train$condition<-factor(train$condition)
+levels(train$condition)
+
+ggplot(train,aes(x=view, y=price)) +
+  geom_boxplot() +
+  labs(title="Distribution of Price by View")
+```
+```{r}
+ggplot(train,aes(x=as.factor(grade), y=price)) +
+  geom_boxplot() +
+  labs(x="Grade", y="Price", title="Distribution of Price by Grade")
+```
+
+
+```{r}
+p3 <- ggplot(train, aes(x=cut(train$price, 50, dig.lab=100), fill=as.factor(view)))+
+geom_bar()+
+labs(x="Price Range", y="Count",title="Count of Price Range by View",fill="View")
+p3 + theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+result = lm(price~bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+sqft_basement+yr_built+yr_renovated+lat+long, data=train)
+ext.student.res<-rstudent(result)
+n<-dim(train)[1]
+p<-15
+crit<-qt(1-0.05/(2*n), n-p-1)
+ext.student.res[abs(ext.student.res)>crit]
+```
+
+```{r}
+COOKS<-cooks.distance(result)
+COOKS[COOKS>qf(0.5,p,n-p)]
+#DFBETAS<-dfbetas(result)
+#abs(DFBETAS)>2/sqrt(n)
+```
+```{r}
+DFFITS<-dffits(result)
+dffit<-DFFITS[abs(DFFITS)>2*sqrt(p/n)]
+```
+
+```{r}
+quartiles <- quantile(train$price, probs=c(.25, .75), na.rm = FALSE)
+IQR <- IQR(train$price)
+ 
+Lower <- quartiles[1] - 1.5*IQR
+Upper <- quartiles[2] + 1.5*IQR 
+ 
+data_no_outlier <- subset(train, train$price > Lower & train$price < Upper)
+
+p3 <- ggplot(data_no_outlier, aes(x=cut(data_no_outlier$price, 25, dig.lab=10), fill=as.factor(view)))+
+geom_bar(position='fill')+
+labs(x="Price Range", y="Proportion",title="Proportion of Price Range by View",fill="View")
+p3 + theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+p4 <- ggplot(data_no_outlier, aes(x=cut(data_no_outlier$price, 25, dig.lab=10), fill=as.factor(condition)))+
+geom_bar()+
+labs(x="Price Range", y="Count",title="Count of Price Range by Condition",fill="Condition")
+p4 + theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+p5 <- ggplot(data_no_outlier, aes(x=cut(data_no_outlier$price, 25, dig.lab=10), fill=as.factor(grade)))+
+geom_bar()+
+labs(x="Price Range", y="Count",title="Count of Price Range by Grade",fill="Grade")
+p5 + theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+Data$waterfront<-factor(Data$waterfront)
+levels(Data$waterfront)<- c("No","Yes")
+
+ggplot(Data,aes(x=waterfront, y=price)) +
+  geom_boxplot() +
+  labs(title="Distribution of Price by Waterfront")
+```
+
+```{r}
+library(gridExtra)
+sp1 <- ggplot(Data,aes(x=sqft_lot, y=price, color=as.factor(view))) +
+  geom_point(alpha=0.4) +
+  labs(color="view", title="Price by Sqft_Lot and View")
+sp2 <- ggplot(Data,aes(x=sqft_living, y=price, color=as.factor(view))) +
+  geom_point(alpha=0.4) +
+  labs(color="view", title="Price by Sqft_Living and View")
+grid.arrange(sp1, sp2, ncol=2)
+```
+
+```{r}
+regnull <- lm(price~1, data=train)
+regfull <- lm(price~., data=train)
+#step(regnull, scope=list(lower=regnull, upper=regfull), direction="forward") # forward selection
+```
+
+
