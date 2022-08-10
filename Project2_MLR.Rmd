@@ -1,0 +1,54 @@
+---
+title: "Project2-MLR"
+output: html_document
+date: '2022-08-10'
+---
+
+```{r}
+Data <- read.csv('kc_house_data.csv')
+head(Data)
+```
+
+```{r}
+library(ggplot2)
+set.seed(1)
+sample<-sample.int(nrow(Data), floor(.5*nrow(Data))) # 50/50 split
+train<-Data[sample, ] # training data frame
+test<-Data[-sample, ] # test data frame
+```
+
+
+```{r}
+result<-lm(price~bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+sqft_basement+yr_built+yr_renovated+lat+long, data=train)
+summary(result)
+```
+Insignificant coefficients: sqft_lot, floors, and yr_renovated
+
+Conduct partial f-test:
+Null hypothesis: H0: sqft_lot = floors = yr_renovated = 0 -> null hypothesis supports going with the reduced model by dropping sqft_lot, floors, and yr_renovated
+Alternative hypothesis: Ha:at least one of the coefficients in H0 is not 0 ->  alternative hypothesis supports the full model by not sqft_lot, floors, and yr_renovated
+
+```{r}
+reduced<-lm(price~bedrooms+bathrooms+sqft_living+waterfront+view+condition+grade+sqft_above+sqft_basement+yr_built+lat+long, data=train)
+
+anova(reduced,result)
+```
+F-Statistic: 1.2238; P-Value: 0.2993
+Fail to reject null hypothesis, little evidence of supporting full model; go with reduced model
+
+The Partial F-Test did not rule out any aesthetic predictors, but it removed three structural predictors.  
+
+```{r}
+library(faraway)
+vif(result)
+```
+yr_renovated has multicollinearity, so we can drop it.
+
+```{r}
+ggplot(Data, aes(x=grade, y=view, color=lat))+
+geom_point()+
+geom_smooth(method=lm, se=FALSE)+
+labs(title="Scatterplot of Wine Quality against Flavor, by Region")
+```
+
+
