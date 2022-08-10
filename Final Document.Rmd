@@ -2,7 +2,91 @@
 
 
 ## Logistic Regression Visualizations
+Correlation matrix of variables used in logistic regression
+```{r}
+in_use <- Data[, c('price', 'bathrooms', 'sqft_lot', 'floors', 'view', 'condition', 'grade', 'lat', 'long', 'sqft_living15')]
+#in_use
+```
+```{r}
+M = cor(in_use)
+corrplot(M, method = 'number') # colorful number
+```
 
+
+
+### boxplots
+
+The following box plots are included to analyze the difference in distribution ofthe predictors by the value of house_age. This exploratory data analysis will guide our logistic regression by informing us which variables show distinct distributions along this binary variable's categories.
+
+bathrooms
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=bathrooms)) + 
+  geom_boxplot()
+```
+This plot shows us that the distribution of bathrooms differ between houses built or renovated before or after 2007. The number of bathrooms in houses built or renovated after 2007 is higher on average than for houses that were built or renevated in 2007 or before. We can see that the median and first quartile of bathrooms for houses built or renovated after 2007 is as high as the third quartile for those houses built or renovated during 2007 or before.
+
+sqft_lot
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=sqft_lot)) + 
+  geom_boxplot()
+```
+We constructed this plot of house_age versus sqft_lot in order to investigate if the lot size of a house is determined by the year the house was built. Our intuition leads us to this investigation because houses built earlier might have been less crowded because less overall development may have been present in the area, resulting in the creation of lots that are larger at the time of land acquisition and building. We can see in this plot that the tail for sqft_lot for houses built or renovated before or during 2007 is much longer than the tail for those built or renovated after 2007. However, we can see that the third quartile for houses built after 2007 is higher than that for houses built or renevated before 2007.
+
+floors
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=floors)) + 
+  geom_boxplot()
+```
+This figure shows the distribution of floors among houses built or renovated before and during 2007 and those whose construction occurred after 2007. We can see that the distribution of floors for houses built or renovated after 2007 is heavily focussed on 2 floors. The first quartile, median, and third quartile for houses built or renovated after 2007 all fall on 2 floors. In contrast, the minimum, first quartile, and median of houses built during or before 2007 fall on 1 floor. We can see that it was more common to build or renovate houses with wider variance of their number of floors when the house was built or renovated during and before 2007.
+
+view
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=view)) + 
+  geom_boxplot()
+```
+We can see from this box-plot that the majority of "view" responses for houses that were built and renovated before or after 2007 are zero. From this figure we cannot determine that there is a difference in the distribution of "view" based on the year of construction or renovation.
+
+condition
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=condition)) + 
+  geom_boxplot()
+```
+We can see from this plot that the distribution of condition has more variance for houses built or renovated before and during 2007 than for those built or renovated after this year.
+
+grade
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=grade)) + 
+  geom_boxplot()
+```
+This box-plot shows the difference in grade distribution based on the variable house_age. We can see that the interquartile range for both values of house_age are nearly identical, though the distribution of grade rating for houses built or renovated after 2007 is centered higher than the distribution of grade for houses built or renovated before and during 2007.
+
+lat
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=lat)) + 
+  geom_boxplot()
+```
+long
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=long)) + 
+  geom_boxplot()
+```
+We can see in the above plots that for houses built or renovated after 2007, the distribution of latitudes has less variance than the distribution of houses built during and after 2007, whereas the opposite effect is true for longitude. This is an interesting contrast, which indicates a shift in building concentration from a east-west orientation throughout king county to a north-south distribution of building.
+
+sqft_living15
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=sqft_living)) + 
+  geom_boxplot()
+```
+This figure describes the distributions of sqft_living by the house_age category. We can see tha that the 
 
 
 ## Coefficients for logistic regression:
@@ -23,3 +107,5 @@ grade - For a 1 unit increase in the grade rating of the house, the estimated lo
 lat - For a 1 degree increase in latitude, the estimated log odds of the house being built before or during 2007 will increase by 1.764.
 long - For a 1 degree increase in longitude, the estimated log odds of the house being built before or during 2007 will decrease by 0.893.
 sqft_living15 - For a 1 square foot increase of interior housing living space for the nearest 15 neighbors, the estimated log odds of the house being built before or during 2007 increase by 0.000657.
+
+
