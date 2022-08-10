@@ -42,8 +42,7 @@ Data %>%
 
 ```{r}
 in_use <- Data[, c('price', 'bathrooms', 'sqft_lot', 'floors', 'view', 'condition', 'grade', 'lat', 'long', 'sqft_living15')]
-  
-in_use
+#in_use
 ```
 
 ```{r}
@@ -170,6 +169,12 @@ Data %>%
 
 1. address overfitting
 2. interpret coefficients
+
+
+
+check assumptions
+see if you can improve through transformations
+outliers / influential observations
 
 
 
