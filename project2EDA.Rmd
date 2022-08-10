@@ -1,0 +1,176 @@
+# Project 3 EDA
+
+```{r}
+library(tidyverse)
+library(corrplot)
+Data<-read.csv("kc_house_data.csv", header=TRUE)
+```
+
+
+```{r}
+Data <- Data %>%
+  mutate(house=ifelse(yr_renovated!=0, yr_renovated, yr_built))
+Data <- Data %>%
+  mutate(house_age=ifelse(house<=2007, 'yes', 'no'))
+```
+
+```{r}
+Data
+```
+
+loc vs house_age
+```{r}
+Data <- Data %>%
+  mutate(lat_long1=long*lat)
+
+Data %>%
+  ggplot(aes(x=lat_long1, y=price, fill=house_age, alpha=.01, color=house_age)) + 
+  geom_point()
+
+```
+lco vs house_age 2
+```{r}
+Data <- Data %>%
+  mutate(lat_long2=long+lat)
+
+Data %>%
+  ggplot(aes(x=lat_long2, y=price, fill=house_age, alpha=.01, color=house_age)) + 
+  geom_point()
+
+```
+
+
+```{r}
+in_use <- Data[, c('price', 'bathrooms', 'sqft_lot', 'floors', 'view', 'condition', 'grade', 'lat', 'long', 'sqft_living15')]
+  
+in_use
+```
+
+```{r}
+M = cor(in_use)
+corrplot(M, method = 'number') # colorful number
+```
+We constructed a correlation matrix to visualize correlation between variables, and to double check that there is no multicollinearity between any of the predictors. As we can see from the figure, The correlations between predictors is moderate, and where higher correlation exist, we can logically deduce that the predictors are not related through a lurking variable.
+
+
+boxplots
+bathrooms
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=bathrooms)) + 
+  geom_boxplot()
+```
+sqft_lot
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=sqft_lot)) + 
+  geom_boxplot()
+```
+
+sqft_lot density
+```{r}
+Data %>%
+  ggplot(aes(sqft_lot, color=house_age)) + 
+  geom_density()
+```
+
+floors
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=floors)) + 
+  geom_boxplot()
+```
+view
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=view)) + 
+  geom_boxplot()
+```
+
+condition
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=condition)) + 
+  geom_boxplot()
+```
+
+grade
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=grade)) + 
+  geom_boxplot()
+```
+
+lat
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=lat)) + 
+  geom_boxplot()
+```
+
+long
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=long)) + 
+  geom_boxplot()
+```
+
+lat_long1
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=lat_long1)) + 
+  geom_boxplot()
+```
+lat_long2
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=lat_long1)) + 
+  geom_boxplot()
+```
+
+
+sqft_living15
+```{r}
+Data %>%
+  ggplot(aes(x=house_age, y=sqft_living)) + 
+  geom_boxplot()
+```
+The result of this boxplot makes me think that there is a latent feature underlying sqft_living, because of the very large amount of "outliers" in the "yes" category. I think this latent feature might be 
+
+density plot to understand distribution of sqft living by house_age
+```{r}
+Data %>%
+  ggplot(aes(sqft_living, color=house_age)) + 
+  geom_density()
+```
+
+density plot to understand distribution of sqft living by house_age
+```{r}
+Data %>%
+  ggplot(aes(yr_built, color=house_age)) + 
+  geom_density()
+```
+
+
+yr_built vs sqft_living
+```{r}
+Data %>%
+  ggplot(aes(x=yr_built, y=sqft_living15, color=house_age, alpha=.01)) + 
+  geom_point()
+```
+As the mean increases, so too does the variance. As we can see from the scatter-plot, the square feet of living space a house has increases as it is built later.
+
+
+```{r}
+Data %>%
+  ggplot(aes(x=yr_built, y=bedrooms, color=house_age, alpha=.01)) + 
+  geom_point()
+```
+
+
+1. address overfitting
+2. interpret coefficients
+
+
+
+

@@ -1,1 +1,25 @@
 # This document is for the coallation of various other notebooks
+
+
+## Logistic Regression Visualizations
+
+
+
+## Coefficients for logistic regression:
+```{r}
+reduced <- glm(house_age~price+bathrooms+sqft_lot+floors+view+condition+grade+lat+long+sqft_living15, family = 'binomial', data = train)
+summary(reduced)
+```
+For a one-unit increase in the predictor x1, the estimated log
+odds changes by β1, while holding other predictors constant
+
+price - For a one dollar increase in home price, the estimated log odds of the house being built before or during 2007 decrease by 0.000000350 while holding other predictors constant.
+bathrooms - For the house's inclusion of one additional bathroom, the estimated log odds of the house being built before or during 2007 decrease by 0.676 while holding other predictors constant.
+sqft_lot - For a 1 square foot increase in the size of the house's lot, the estimated log odds of the house being built before or during 2007 increase by 0.0000448.
+floors - For the house's inclusion of one additional floor, the estimated log odds of the house being built before or during 2007 decrease by 1.258.
+view - For a 1 unit increase in the view rating of the house, the estimated log odds of the house being built before or during 2007 increase by 0.279.
+condition - For a 1 unit increase in the condition rating of the house, the estimated log odds of the house being built before or during 2007 increase by 1.798.
+grade - For a 1 unit increase in the grade rating of the house, the estimated log odds of the house being built before or during 2007 decrease by 0.281.
+lat - For a 1 degree increase in latitude, the estimated log odds of the house being built before or during 2007 will increase by 1.764.
+long - For a 1 degree increase in longitude, the estimated log odds of the house being built before or during 2007 will decrease by 0.893.
+sqft_living15 - For a 1 square foot increase of interior housing living space for the nearest 15 neighbors, the estimated log odds of the house being built before or during 2007 increase by 0.000657.
