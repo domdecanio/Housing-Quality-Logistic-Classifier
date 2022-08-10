@@ -1,0 +1,351 @@
+---
+title: "Project 2 Logistic Regression"
+author: "Bella Samper"
+date: '2022-08-09'
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+# Bring the data in
+
+```{r}
+library(tidyverse)
+library(ROCR)
+```
+
+```{r}
+Data <- read.csv('kc_house_data.csv')
+Data
+```
+
+```{r}
+# combining yr_built and yr_renovated to another variable
+Data<-Data%>%
+mutate(house=ifelse(yr_renovated!=0, yr_renovated, yr_built))
+
+```
+
+```{r}
+# combining yr_built and yr_renovated to another variable
+Data<-Data%>%
+mutate(house_age=ifelse(house<=2007, 'yes', 'no'))
+
+```
+
+We are taking out house, date, zipcode, yr_built, and yr_renovated.
+We are taking out house because this was used to create house_age and we are taking out date because it is not relevant for our regression.
+We are taking out yr_built and yr_renovated because we used these to create our new variable.
+We are taking out zipcode because it is a factor and would make our regression complicated.
+
+```{r}
+drops <- c('house', 'date', 'yr_built', 'yr_renovated', 'zipcode')
+Data <- Data[, !(names(Data) %in% drops)]
+```
+
+Changing house_age to a factor
+
+```{r}
+Data$house_age <- factor(Data$house_age)
+
+```
+
+# Split it up into train and test
+
+```{r}
+set.seed(1) ##for reproducibility to get the same split
+sample<-sample.int(nrow(Data), floor(.50*nrow(Data)), replace = F)
+train<-Data[sample, ] ##training data frame
+test<-Data[-sample, ] ##test data frame
+
+```
+
+## Creating Visualizations
+
+Boxplot of price vs. house_age
+
+```{r}
+train %>% 
+  ggplot(aes(x= house_age , y= price))+
+  geom_boxplot()
+```
+
+Density Plot of Price vs. House_age
+
+```{r}
+ggplot(train, aes(x= price, color = house_age))+
+  geom_density()
+```
+
+House_age vs. bedrooms
+
+```{r}
+train %>% 
+  ggplot(aes(x= house_age, y= bedrooms))+
+  geom_boxplot()
+```
+
+```{r}
+ggplot(train, aes(x= bedrooms, color = house_age))+
+  geom_density()
+```
+
+## Logistic Regression
+
+```{r}
+summary(glm(house_age~ ., family = "binomial", data=train))
+```
+
+sqft_basement is NA because it has perfect multicolinearity so, we can take it out.
+
+```{r}
+full_result <- glm(house_age~id+price+bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+lat+long+sqft_living15+sqft_lot15, family = 'binomial', data = train)
+summary(full_result)
+```
+
+When we look at the above Wald tests for each coefficient, we can see that id, bedrooms, sqft_living, waterfront, and sqft_above are insignificant and sqft_lot15 is fairly close.
+Bringing us to the conclusion, we may be able to take these variables out to better fit the model.
+We will drop these variables and see how the z tests turn out.
+
+```{r}
+reduced <- glm(house_age~price+bathrooms+sqft_lot+floors+view+condition+grade+lat+long+sqft_living15, family = 'binomial', data = train)
+
+summary(reduced)
+
+```
+
+Once we run the new model, we can see that none of the z tests are insignificant anymore.
+To determine if this model is better than the full model we will use the Likelihood ratio test.
+
+The null hypothesis is that $\beta_1 = \beta_3 = \beta_5 = \beta_8 = \beta_{12} = \beta_{16} = 0$ (The coefficients for id, bedrooms, sqft_living, waterfront, sqft_above, and sqft_lot15) The alternative is that at least one of the coefficients in the null is not zero.
+
+```{r}
+TS <- reduced$deviance - full_result$deviance
+
+1-pchisq(TS, 5)
+```
+
+Our p-value is 0.09 so we fail to reject the null and prefer the reduced model over the full model.
+Therefore, we can use the reduced model that excludes id, bedrooms, sqft_living, waterfront, sqft_above, and sqft_lot15.
+I now want to find out if this model is useful.
+So, we will do another Likelihood ratio test with different hypotheses.
+
+The null hypothesis is $\beta_2 = \beta_4 = \beta_6 = \beta_7 = \beta_9 = \beta_{10} = \beta_{11} = \beta_{13} = \beta_{14} = \beta_{15} = 0$ (The coefficients of price, bathrooms, sqft_lot, floors, view, condition, grade, lat, long, sqft_living15, and sqft_lot15)
+
+```{r}
+TS2 <- reduced$null.deviance-reduced$deviance
+
+1-pchisq(TS2, 11)
+```
+
+Our p-value is zero so, we can reject the null hypothesis and choose the reduced model over the intercept-only model.
+The reduced model is useful.
+
+
+
+### Run a test on this model against the full to see which one is better
+
+# Validation
+
+```{r}
+preds <- predict(reduced, newdata = test, type = "response")
+```
+
+## ROC Curve
+
+```{r}
+rates <- prediction(preds, test$house_age)
+```
+
+```{r}
+roc_result<-performance(rates, measure='tpr', x.measure = 'fpr')
+```
+
+```{r}
+plot(roc_result, main="ROC Curve for Houses Sold")
+lines(x=c(0,1), y= c(0,1), col = 'red')
+```
+
+The ROC curve gives all possible combinations of the true positive rate and the false positive rate as the threshold varies from 0 to 1.
+The red diagonal line represents randomly guessing the binary outcome without using any information from the predictors.
+Our ROC curve is above this diagonal which indicates that our logistic regression does better than random guessing.
+
+## AUC
+
+AUC is the area under the curve of the ROC where 1 is a perfect classifer and a classifer with a value of .5 would be randomly guessing.
+
+```{r}
+auc <- performance(rates, measure = "auc")
+auc@y.values
+```
+
+The AUC of our ROC curve is 0.8655566 which means our logisitc regression does better than random guessing because it is above 0.5.
+
+## Confusion Matrices
+
+```{r}
+table(test$house_age, preds>0.5)
+```
+
+The confusion matrices allows us to compare our model with a specific threshold rather than various like we do in the ROC.
+In our first matrix we used a threshold of 0.5.
+
+```{r}
+(933+112)/(113+933+112+9649)
+```
+
+```{r}
+933/(113+933)
+```
+
+```{r}
+112/(112+9649)
+```
+
+```{r}
+9643/(9643+118)
+```
+
+```{r}
+112/(112+934)
+```
+
+```{r}
+9649/(9649+112)
+```
+
+```{r}
+113/(113+933)
+```
+
+```{r}
+1-0.09669659
+```
+
+Accuracy is 0.9033034.
+The Overall error rate is 0.09669659.
+The False Positive Rate is 0.8919694.
+The False Negative Rate is 0.01147423 Sensitivity is 0.9885258.
+Specificity is 0.1080306
+
+Looking at the statistics above we can see that accuracy is very high, but false positive rate is also very high.
+Accuracy is a misleading measure when you have unbalanced sample sizes of two classes.
+In our example, we do have fairly high imbalance of our classes with those houses ages before 2007 includes a lot more data points that those after.
+To fix this we can adjust the threshold and find better predictors to distinguish between the two classes.
+We will first adjust the threshold.
+
+We want the false positive and false negative rate to be very low and the sensitivity and specificity to be very high.
+In this case, our false positive rate is very high and our specificity is very low so, we can change out threshold to increase specificity.
+If we increase the threshold, the false positive rate is decreased the the expense of the true positive rate which is lowered as well.
+Since our model has a insanely high false positive rate we will increase the threshold to 0.8 and recalculate the statistics.
+
+```{r}
+table(test$house_age, preds>0.8)
+```
+
+```{r}
+overall <- (392+1263)/(654+1263+392+8498)
+overall
+```
+
+```{r}
+FPR1 <- 392/(654+392)
+FPR1
+```
+
+```{r}
+FNR1 <- 1263/(1263+8498)
+FNR1
+```
+
+```{r}
+sens <- 1-0.1293925
+sens
+```
+
+```{r}
+specific <- 1-0.374761
+specific
+```
+
+The Overall error rate is 0.1531415.
+The False Positive Rate is 0.374761.
+The False Negative Rate is 0.1293925.
+Sensitivity is 0.8706075.
+Specificity is 0.625239.
+
+With our new threshold of 0.8, our FPR decreased a lot and our specificity increased a lot while our overall error rate, and false negative rate increased, but not by a lot.
+Similarly, our sensitivity decreased but not by a lot.
+
+With all of these tests, we are determining how well the model does in classifying observations.
+Once we adjusted the threshold, it seems to do fairly well and after all the validation we can use this model to predict house age.
+
+
+
+## Correlation Matrix 
+
+```{r}
+
+```
+
+
+
+## Step-wise starting with nothing - not sure if we need this
+
+```{r}
+regnull <- glm(house_age~1, family = 'binomial', data = train)
+```
+
+```{r}
+step(regnull, scope = list(lower=regnull, upper=full_result), direction = 'both')
+```
+house_age~id+price+bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+lat+long+sqft_living15+sqft_lot15
+
+After running the stepwise test starting with nothing going both ways it come out with the following logistic regression:
+
+$ log(\frac{\hat{\pi}}{1-\hat{\pi}}) = -0.02029-1.237x_7+1.791x_{10}+0.000714x_6-0.7271x_4+0.00005819x_{15}-0.2912x_{11}+1.885x_{13}+0.2511x_9-0.9362x_{14}-0.0000005x_2+0.00002160x_{16}+0.0001483x_5+0.9442I_1$ where $I_1 = 1$ is there is a waterfront and $I_1 = 0$ is it doesn't 
+
+
+# Validation Part 2 
+
+```{r}
+reduced2 <- glm(formula = house_age ~ floors + condition + sqft_lot + bathrooms + 
+    sqft_living15 + grade + lat + view + long + price + sqft_lot15 + 
+    sqft_living + waterfront, family = "binomial", data = train)
+```
+
+
+
+```{r}
+preds2 <- predict(reduced2, newdata = test, type = "response")
+```
+
+## ROC Curve Part 2
+
+```{r}
+rates2 <- prediction(preds2, test$house_age)
+```
+
+```{r}
+roc_result2<-performance(rates2, measure='tpr', x.measure = 'fpr')
+```
+
+```{r}
+plot(roc_result2, main="ROC Curve for Houses Sold Part 2")
+lines(x=c(0,1), y= c(0,1), col = 'orange')
+```
+
+Our ROC curve is once again above this diagonal which indicates that our logistic regression does better than random guessing.
+
+## AUC
+
+AUC is the area under the curve of the ROC where 1 is a perfect classifer and a classifer with a value of .5 would be randomly guessing.
+
+```{r}
+auc2 <- performance(rates2, measure = "auc")
+auc2@y.values
+```
+The alternative AUC of our alternative ROC curve is 0.8660983 which means our logisitc regression does better than random guessing because it is above 0.5.
+
+
