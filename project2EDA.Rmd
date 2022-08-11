@@ -8,9 +8,9 @@ Data<-read.csv("kc_house_data.csv", header=TRUE)
 
 
 ```{r}
-Data <- Data %>%
+training <- training %>%
   mutate(house=ifelse(yr_renovated!=0, yr_renovated, yr_built))
-Data <- Data %>%
+training <- training %>%
   mutate(house_age=ifelse(house<=2007, 'yes', 'no'))
 ```
 
@@ -20,34 +20,41 @@ Data
 
 loc vs house_age
 ```{r}
-Data <- Data %>%
+training <- training %>%
   mutate(lat_long1=long*lat)
 
-Data %>%
+training %>%
   ggplot(aes(x=lat_long1, y=price, fill=house_age, alpha=.01, color=house_age)) + 
   geom_point()
 
 ```
 lco vs house_age 2
 ```{r}
-Data <- Data %>%
+training <- training %>%
   mutate(lat_long2=long+lat)
 
-Data %>%
+training %>%
   ggplot(aes(x=lat_long2, y=price, fill=house_age, alpha=.01, color=house_age)) + 
-  geom_point()
-
+  geom_point() + 
+  xlab('Longitude + Latitude (Degrees)') +
+  ylab('Price (USD)') + 
+  labs(title='Distribution of Construction Age by Location')
 ```
 
 
 ```{r}
-in_use <- Data[, c('price', 'bathrooms', 'sqft_lot', 'floors', 'view', 'condition', 'grade', 'lat', 'long', 'sqft_living15')]
+in_use <- training[, c('price', 'bathrooms', 'sqft_lot', 'floors', 'view', 'condition', 'grade', 'lat', 'long', 'sqft_living15')]
 #in_use
 ```
 
 ```{r}
-M = cor(in_use)
-corrplot(M, method = 'number') # colorful number
+in_use2 <- training[, c('price', 'bedrooms', 'bathrooms', 'sqft_living', 'sqft_lot', 'floors', 'waterfront', 'view', 'condition', 'grade', 'sqft_above', 'sqft_basement', 'yr_built', 'yr_renovated', 'zipcode', 'lat', 'long', 'sqft_living15', 'sqft_lot15')]
+#in_use
+```
+
+```{r}
+M = cor(in_use2)
+corrplot(M, method = 'color') # colorful number
 ```
 We constructed a correlation matrix to visualize correlation between variables, and to double check that there is no multicollinearity between any of the predictors. As we can see from the figure, The correlations between predictors is moderate, and where higher correlation exist, we can logically deduce that the predictors are not related through a lurking variable.
 
@@ -55,74 +62,74 @@ We constructed a correlation matrix to visualize correlation between variables, 
 boxplots
 bathrooms
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=bathrooms)) + 
   geom_boxplot()
 ```
 sqft_lot
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=sqft_lot)) + 
   geom_boxplot()
 ```
 
 sqft_lot density
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(sqft_lot, color=house_age)) + 
   geom_density()
 ```
 
 floors
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=floors)) + 
   geom_boxplot()
 ```
 view
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=view)) + 
   geom_boxplot()
 ```
 
 condition
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=condition)) + 
   geom_boxplot()
 ```
 
 grade
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=grade)) + 
   geom_boxplot()
 ```
 
 lat
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=lat)) + 
   geom_boxplot()
 ```
 
 long
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=long)) + 
   geom_boxplot()
 ```
 
 lat_long1
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=lat_long1)) + 
   geom_boxplot()
 ```
 lat_long2
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=lat_long1)) + 
   geom_boxplot()
 ```
@@ -130,7 +137,7 @@ Data %>%
 
 sqft_living15
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=house_age, y=sqft_living)) + 
   geom_boxplot()
 ```
@@ -138,44 +145,66 @@ The result of this boxplot makes me think that there is a latent feature underly
 
 density plot to understand distribution of sqft living by house_age
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(sqft_living, color=house_age)) + 
-  geom_density()
+  geom_density() + 
+  xlab('Size of Living Space (Square Feet)') + 
+  ylab('Density') +
+  labs(title='Density of Living Space Size by Construction Age')
 ```
 
 density plot to understand distribution of sqft living by house_age
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(yr_built, color=house_age)) + 
-  geom_density()
+  geom_density() + 
+  xlab('Year Built') + 
+  ylab('Density') +
+  labs(title='Density of Year Built by Construction Age')
 ```
 
 
 yr_built vs sqft_living
 ```{r}
-Data %>%
-  ggplot(aes(x=yr_built, y=sqft_living15, color=house_age, alpha=.01)) + 
-  geom_point()
+training %>%
+  ggplot(aes(x=yr_built, y=sqft_living, color=house_age, alpha=.01)) + 
+  geom_point() + 
+  ylab('Living Space (square feet)') + 
+  xlab('Year Built') +
+  labs(title='Home Year Built Versus Living Space')
 ```
-As the mean increases, so too does the variance. As we can see from the scatter-plot, the square feet of living space a house has increases as it is built later.
+As the mean increases, so too does the variance. As we can see from the scatter-plot, the square feet of living space a house has increases as it is built later. We can also see that the houses renovated after 2007 are evenly distributed throughout the pre-2007 sample area. The objective of this figure was to show if the houses renovated after 2007 shared original construction year or living space size, which might uncover latent variables which drove these renovations. We do not see such a pattern in this scatter-plot.
 
 
 ```{r}
-Data %>%
+training %>%
   ggplot(aes(x=yr_built, y=bedrooms, color=house_age, alpha=.01)) + 
   geom_point()
 ```
 
 
-1. address overfitting
-2. interpret coefficients
+```{r}
+training %>%
+  ggplot(aes(x=waterfront, fill=house_age)) + 
+  geom_bar(position='dodge')
+```
+
+```{r}
+pairs(in_use2)
+```
 
 
 
-check assumptions
-see if you can improve through transformations
-outliers / influential observations
 
+```{r}
+cols <- character(nrow(Data))
+cols[] <- "black"
 
+#cols[iris$Species %in% c("setosa","versicolor")] <- "blue"
+cols[Data$house_age == "no"] <- "red"
+#pairs(iris,col=cols)
 
+pairs(~price+bedrooms+bathrooms+sqft_living+sqft_lot+floors+waterfront+view+condition+grade+sqft_above+sqft_basement+yr_built+yr_renovated+zipcode+lat+long+sqft_living15+sqft_lot15, data=Data, col=cols)
+#in_use, col=house_age)
+```
 
